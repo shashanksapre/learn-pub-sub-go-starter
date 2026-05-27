@@ -20,6 +20,7 @@ func main() {
 		return
 	}
 
+	defer conn.Close()
 	chanelle, err := conn.Channel()
 
 	if err != nil {
@@ -34,7 +35,6 @@ func main() {
 		return
 	}
 
-	defer conn.Close()
 	fmt.Println("Connected to RabbitMQ at localhost:5672")
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
