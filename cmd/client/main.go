@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -97,6 +98,30 @@ func main() {
 
 		if arguments[0] == "status" {
 			gameState.CommandStatus()
+			continue
+		}
+
+		if arguments[0] == "spam" {
+			if len(arguments) < 2 {
+				fmt.Println("Please pass an integer")
+				continue
+			}
+
+			numberOfMessages, err := strconv.Atoi(arguments[1])
+
+			if err != nil {
+				fmt.Println("Please pass an integer")
+				continue
+			}
+
+			for i := 0; i <= numberOfMessages; i++ {
+				err = pubsub.PublishJSON(publishCh, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s", routing.GameLogSlug, username), gamelogic.GetMaliciousLog())
+
+				if err != nil {
+					fmt.Println("Error publishing", err)
+				}
+			}
+
 			continue
 		}
 
