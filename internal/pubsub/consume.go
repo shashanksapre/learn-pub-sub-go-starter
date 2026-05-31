@@ -1,6 +1,8 @@
 package pubsub
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 
@@ -49,6 +51,59 @@ func SubscribeJSON[T any](
 
 			if err != nil {
 				fmt.Printf("Error unmarshaling json, %s", err)
+			}
+
+			ackType := handler(target)
+
+			switch ackType {
+			case Ack:
+				err = delivery.Ack(false)
+			case NackRequeue:
+				err = delivery.Nack(false, true)
+			case NackDiscard:
+				err = delivery.Nack(false, false)
+			default:
+				fmt.Printf("No Acknowledgement")
+			}
+
+			if err != nil {
+				fmt.Printf("Error acknowledging delivery, %s", err)
+			}
+		}
+	}()
+
+	return nil
+}
+
+func SubscribeGob[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+	handler func(T) AckType,
+) error {
+	chani, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
+
+	if err != nil {
+		return err
+	}
+
+	chango, err := chani.Consume(queue.Name, "", false, false, false, false, nil)
+
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for delivery := range chango {
+			buf := bytes.NewBuffer(delivery.Body)
+			dec := gob.NewDecoder(buf)
+			var target T
+			err := dec.Decode(&target)
+
+			if err != nil {
+				fmt.Printf("Error unmarshaling gob, %s", err)
 			}
 
 			ackType := handler(target)

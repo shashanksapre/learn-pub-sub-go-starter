@@ -30,10 +30,10 @@ func main() {
 	fmt.Println("Connected to RabbitMQ at localhost:5672")
 	gamelogic.PrintServerHelp()
 
-	_, _, err = pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, fmt.Sprintf("%s.*", routing.GameLogSlug), pubsub.Durable)
+	err = pubsub.SubscribeGob(conn, routing.ExchangePerilTopic, routing.GameLogSlug, fmt.Sprintf("%s.*", routing.GameLogSlug), pubsub.Durable, handlerLogs())
 
 	if err != nil {
-		fmt.Println("Error binding to queue", err)
+		fmt.Println("Error subscribing", err)
 		return
 	}
 
