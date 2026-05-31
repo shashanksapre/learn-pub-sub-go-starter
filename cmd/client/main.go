@@ -37,17 +37,30 @@ func main() {
 		return
 	}
 
-	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username), fmt.Sprintf("%s.*", routing.ArmyMovesPrefix), pubsub.Transient, handlerMove(gameState))
+	publishCh, err := conn.Channel()
+
+	if err != nil {
+		log.Fatalf("could not create channel: %v", err)
+	}
+
+	warCh, err := conn.Channel()
+
+	if err != nil {
+		log.Fatalf("could not create channel: %v", err)
+	}
+
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username), fmt.Sprintf("%s.*", routing.ArmyMovesPrefix), pubsub.Transient, handlerMove(gameState, warCh))
 
 	if err != nil {
 		fmt.Println("Error subscribing", err)
 		return
 	}
 
-	publishCh, err := conn.Channel()
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, "war", fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix), pubsub.Durable, handlerWar(gameState))
 
 	if err != nil {
-		log.Fatalf("could not create channel: %v", err)
+		fmt.Println("Error subscribing", err)
+		return
 	}
 
 	for {
