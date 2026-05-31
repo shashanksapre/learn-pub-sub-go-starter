@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
@@ -37,8 +35,50 @@ func main() {
 		return
 	}
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
+	gameState := gamelogic.NewGameState(username)
+
+	for {
+		arguments := gamelogic.GetInput()
+		if len(arguments) == 0 {
+			continue
+		}
+
+		if arguments[0] == "spawn" {
+			err = gameState.CommandSpawn(arguments)
+
+			if err != nil {
+				fmt.Println("Error spawning units", err)
+			}
+
+			continue
+		}
+
+		if arguments[0] == "move" {
+			_, err := gameState.CommandMove(arguments)
+
+			if err != nil {
+				fmt.Println("Error moving units", err)
+			}
+
+			continue
+		}
+
+		if arguments[0] == "status" {
+			gameState.CommandStatus()
+			continue
+		}
+
+		if arguments[0] == "help" {
+			gamelogic.PrintClientHelp()
+			continue
+		}
+
+		if arguments[0] == "quit" {
+			gamelogic.PrintQuit()
+			return
+		}
+
+		fmt.Println("huh?")
+	}
 
 }

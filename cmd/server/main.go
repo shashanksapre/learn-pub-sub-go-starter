@@ -59,10 +59,10 @@ func main() {
 
 		if arguments[0] == "quit" {
 			fmt.Println("exiting")
+			fmt.Println("Peril shutting down...")
 			return
 		}
 
 		fmt.Println("huh?")
 	}
-	fmt.Println("Peril shutting down...")
 }
