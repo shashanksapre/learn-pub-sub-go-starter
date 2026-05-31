@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/bootdotdev/learn-pub-sub-starter/internal"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -27,17 +27,10 @@ func main() {
 		return
 	}
 
-	err = internal.PublishJSON(chanelle, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
-
-	if err != nil {
-		fmt.Println("Error sending message", err)
-		return
-	}
-
 	fmt.Println("Connected to RabbitMQ at localhost:5672")
 	gamelogic.PrintServerHelp()
 
-	_, _, err = internal.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, fmt.Sprintf("%s.*", routing.GameLogSlug), internal.Durable)
+	_, _, err = pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, fmt.Sprintf("%s.*", routing.GameLogSlug), pubsub.Durable)
 
 	if err != nil {
 		fmt.Println("Error binding to queue", err)
@@ -52,12 +45,18 @@ func main() {
 
 		if arguments[0] == "pause" {
 			fmt.Println("sending a pause")
+			err = pubsub.PublishJSON(chanelle, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
+
+			if err != nil {
+				fmt.Println("Error sending message", err)
+			}
+
 			continue
 		}
 
 		if arguments[0] == "resume" {
 			fmt.Println("sending a resume")
-			err = internal.PublishJSON(chanelle, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
+			err = pubsub.PublishJSON(chanelle, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
 
 			if err != nil {
 				fmt.Println("Error sending message", err)

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/bootdotdev/learn-pub-sub-starter/internal"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -28,14 +28,13 @@ func main() {
 		return
 	}
 
-	_, _, err = internal.DeclareAndBind(conn, routing.ExchangePerilDirect, fmt.Sprintf("%s.%s", routing.PauseKey, username), routing.PauseKey, internal.Transient)
+	gameState := gamelogic.NewGameState(username)
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilDirect, fmt.Sprintf("%s.%s", routing.PauseKey, username), routing.PauseKey, pubsub.Transient, handlerPause(gameState))
 
 	if err != nil {
-		fmt.Println("Error binding client", err)
+		fmt.Println("Error subscribing", err)
 		return
 	}
-
-	gameState := gamelogic.NewGameState(username)
 
 	for {
 		arguments := gamelogic.GetInput()
