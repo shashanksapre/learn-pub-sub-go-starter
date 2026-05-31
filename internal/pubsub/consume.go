@@ -38,6 +38,12 @@ func SubscribeJSON[T any](
 		return err
 	}
 
+	err = chani.Qos(10, 0, false)
+
+	if err != nil {
+		return err
+	}
+
 	chango, err := chani.Consume(queue.Name, "", false, false, false, false, nil)
 
 	if err != nil {
@@ -84,6 +90,12 @@ func SubscribeGob[T any](
 	handler func(T) AckType,
 ) error {
 	chani, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
+
+	if err != nil {
+		return err
+	}
+
+	err = chani.Qos(10, 0, false)
 
 	if err != nil {
 		return err
