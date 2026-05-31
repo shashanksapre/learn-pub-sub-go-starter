@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -36,6 +37,19 @@ func main() {
 		return
 	}
 
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username), fmt.Sprintf("%s.*", routing.ArmyMovesPrefix), pubsub.Transient, handlerMove(gameState))
+
+	if err != nil {
+		fmt.Println("Error subscribing", err)
+		return
+	}
+
+	publishCh, err := conn.Channel()
+
+	if err != nil {
+		log.Fatalf("could not create channel: %v", err)
+	}
+
 	for {
 		arguments := gamelogic.GetInput()
 		if len(arguments) == 0 {
@@ -53,10 +67,16 @@ func main() {
 		}
 
 		if arguments[0] == "move" {
-			_, err := gameState.CommandMove(arguments)
+			move, err := gameState.CommandMove(arguments)
 
 			if err != nil {
 				fmt.Println("Error moving units", err)
+			}
+
+			err = pubsub.PublishJSON(publishCh, routing.ExchangePerilTopic, fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username), move)
+
+			if err != nil {
+				fmt.Println("Error publishing", err)
 			}
 
 			continue
