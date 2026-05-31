@@ -7,11 +7,19 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type SimpleQueueType string
+type SimpleQueueType int
 
 const (
-	Durable   SimpleQueueType = "durable"
-	Transient SimpleQueueType = "transient"
+	Durable SimpleQueueType = iota
+	Transient
+)
+
+type AckType int
+
+const (
+	Ack AckType = iota
+	NackRequeue
+	NackDiscard
 )
 
 func SubscribeJSON[T any](
@@ -20,7 +28,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	queueType SimpleQueueType,
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 	chani, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
 
@@ -43,8 +51,18 @@ func SubscribeJSON[T any](
 				fmt.Printf("Error unmarshaling json, %s", err)
 			}
 
-			handler(target)
-			err = delivery.Ack(false)
+			ackType := handler(target)
+
+			switch ackType {
+			case Ack:
+				err = delivery.Ack(false)
+			case NackRequeue:
+				err = delivery.Nack(false, true)
+			case NackDiscard:
+				err = delivery.Nack(false, false)
+			default:
+				fmt.Printf("No Acknowledgement")
+			}
 
 			if err != nil {
 				fmt.Printf("Error acknowledging delivery, %s", err)
